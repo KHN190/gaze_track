@@ -14,6 +14,7 @@ from redis import Redis
 
 from models.face_detect import *
 from models.load_model import *
+from models.blink_detect import *
 
 import pickle
 
@@ -26,14 +27,17 @@ def face_track(cap=None, conn=None):
     # get frame from camera
     ret, frame = cap.read()
     if ret:
-        img = frame
-        img, faces, face_feats = extract_frame_features(img)
+        img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        img, faces, face_feats = extract_frame_features(img, grayed=True)
+
+        blinks = extract_blinks(img)
 
         # redis conn
         if conn is None:
             conn = Redis()
         conn.set("faces", pickle.dumps(faces), ex=2)
         conn.set("face_feats", pickle.dumps(face_feats), ex=2)
+        conn.set("blinks", pickle.dumps(blinks), ex=2)
 
 
 def gaze_track(conn=None):

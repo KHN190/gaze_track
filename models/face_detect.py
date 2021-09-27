@@ -43,9 +43,11 @@ def get_face_grid(face, frameW, frameH, gridSize):
                                 faceY, faceW, faceH, False)
 
 
-def extract_frame_features(img):
+def extract_frame_features(img, grayed=False):
     start_ms = current_time()
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray = img
+    if not grayed:
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     face_detections = face_cascade.detectMultiScale(gray, 1.3, 5)
 
     faces = []
