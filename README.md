@@ -36,5 +36,6 @@ flask run
 
 ## API
 
-* '/' for timestamp
-* '/gaze' for eye coords
+* `http://127.0.0.1:5000/` for timestamp
+* `http://127.0.0.1:5000/gaze` for eye coords
+* `http://127.0.0.1:5000/blinks` for blink count

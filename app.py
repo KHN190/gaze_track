@@ -17,13 +17,22 @@ def ping():
 
 # get last frame gaze coords
 # 
-# fetch data from queue
-# 
 @app.route("/gaze")
 def gaze_track():
 
     rep = conn.get("gaze_coord")
 
     if rep is not None:
+        return rep
+    return ''
+
+# get last blinks count
+# 
+@app.route("/blink")
+def blink_count():
+
+    rep = conn.get("blinks")
+
+    if re is not None:
         return rep
     return ''
