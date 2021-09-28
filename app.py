@@ -33,6 +33,6 @@ def blink_count():
 
     rep = conn.get("blinks")
 
-    if re is not None:
+    if rep is not None:
         return rep
     return ''

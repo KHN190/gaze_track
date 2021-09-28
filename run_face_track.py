@@ -10,13 +10,14 @@ if __name__ == '__main__':
     conn = Redis()
     last = time.time()
 
+    blinks = 0
     while True:
         now = time.time()
         if now - last < 500: # 200ms
             time.sleep(0.1)
         last = now
 
-        face_track(cap=cap, conn=conn)
+        blinks = face_track(cap=cap, conn=conn, blinks=blinks)
 
     cap.release()
     cv2.destroyAllWindows()

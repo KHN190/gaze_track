@@ -19,7 +19,7 @@ from models.blink_detect import *
 import pickle
 
 
-def face_track(cap=None, conn=None):
+def face_track(cap=None, conn=None, blinks=0):
     # capture frame from camera
     if cap is None:
         cap = cv2.VideoCapture(0)
@@ -27,17 +27,20 @@ def face_track(cap=None, conn=None):
     # get frame from camera
     ret, frame = cap.read()
     if ret:
-        img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        img, faces, face_feats = extract_frame_features(img, grayed=True)
-
-        blinks = extract_blinks(img)
-
         # redis conn
         if conn is None:
             conn = Redis()
+        # face + eye detection
+        img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        img, faces, face_feats = extract_frame_features(img, grayed=True)
+        # blink detection
+        blinks = extract_blinks(img, base=blinks)
+
         conn.set("faces", pickle.dumps(faces), ex=2)
         conn.set("face_feats", pickle.dumps(face_feats), ex=2)
-        conn.set("blinks", pickle.dumps(blinks), ex=2)
+        conn.set("blinks", str(blinks), ex=2)
+
+    return blinks
 
 
 def gaze_track(conn=None):
