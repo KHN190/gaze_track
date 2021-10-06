@@ -26,8 +26,8 @@ ap.add_argument('-p', '--shape-predictor', required=True, help='path to facial l
 ap.add_argument('-v', '--video', type=str, default="", help='path to input video file')
 args = vars(ap.parse_args())
 
-EYE_AR_THRESH = 0.30
-EYE_AR_CONSEC_FRAMES = 3
+EYE_AR_THRESH = 0.26
+EYE_AR_CONSEC_FRAMES = 5
 
 COUNTER = 0
 TOTAL = 0

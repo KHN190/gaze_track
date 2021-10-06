@@ -2,9 +2,14 @@ import os
 os.environ['GLOG_minloglevel'] = '2' 
 
 import caffe
+import yaml
 
-# caffe.set_mode_gpu()
-# caffe.set_device(0)
+with open 'config.yml' as f:
+    config = yaml.load(f.read(), Loader=yaml.CLoader)
+
+if config.get('gpu'):
+    caffe.set_mode_gpu()
+    caffe.set_device(0)
 
 import cv2
 import json
@@ -31,10 +36,10 @@ def face_track(cap=None, conn=None, blinks=0):
         if conn is None:
             conn = Redis()
         # face + eye detection
-        img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        img, faces, face_feats = extract_frame_features(img, grayed=True)
+        img, faces, face_feats = extract_frame_features(frame, grayed=False)
         # blink detection
-        blinks = extract_blinks(img, base=blinks)
+        img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        blinks = extract_blinks(img, base=blinks, ear_thresh=config['EYE_AR_THRESH'])
 
         conn.set("faces", pickle.dumps(faces), ex=2)
         conn.set("face_feats", pickle.dumps(face_feats), ex=2)

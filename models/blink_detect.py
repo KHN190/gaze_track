@@ -8,8 +8,8 @@ import dlib
 import os
 
 # config for blink detection
-EYE_AR_THRESH = 0.30
-EYE_AR_CONSEC_FRAMES = 3
+COUNTER = 0
+TOTAL = 0
 
 # load facial landmark detector
 model_root = os.getcwd() + '/models'
@@ -33,7 +33,7 @@ def eye_aspect_ratio(eye):
     return (A + B) / (2.0 * C)
 
 
-def extract_blinks(gray, base=0):
+def extract_blinks(gray, base=0, ear_thresh=0.25):
     # count eye blink
     cnt = base
 
@@ -51,14 +51,10 @@ def extract_blinks(gray, base=0):
 
         ear = (leftEAR + rightEAR) / 2.0
 
-        if ear < EYE_AR_THRESH:
+        if ear < ear_thresh:
             cnt += 1
-        # else:
-        #     if cnt >= EYE_AR_CONSEC_FRAMES:
-        #         TOTAL += 1 # to prevent false positive
-        #     cnt = 0
 
-    duration_ms = current_time() - start_ms
-    print("Eye blink detection took:     ", str(duration_ms / 1000) + "s")
+        duration_ms = current_time() - start_ms
+        print("Eye blink detection took:     ", str(duration_ms / 1000) + "s")
 
     return cnt

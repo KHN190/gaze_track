@@ -36,6 +36,12 @@ flask run
 
 ## API
 
+Flask runs API from `app.py`
+
 * `http://127.0.0.1:5000/` for timestamp
 * `http://127.0.0.1:5000/gaze` for eye coords
 * `http://127.0.0.1:5000/blinks` for blink count
+
+## Dataset
+
+I used [`eyeblink8`](https://www.blinkingmatters.com/research) to train SVM classifier for eye blink detection.
