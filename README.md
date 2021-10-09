@@ -42,6 +42,6 @@ Flask runs API from `app.py`
 * `http://127.0.0.1:5000/gaze` for eye coords
 * `http://127.0.0.1:5000/blinks` for blink count
 
-## Dataset
+## SVM for eye blink
 
-I used [`eyeblink8`](https://www.blinkingmatters.com/research) to train SVM classifier for eye blink detection.
+The SVM uses consecutive frames of Eye Aspect Ratio (ear) to predict eye blink. Dataset [`eyeblink8`](https://www.blinkingmatters.com/research) is used to train the SVM classifier. 

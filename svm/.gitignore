@@ -1,0 +1,10 @@
+__pycache__/
+
+# ignore data
+eyeblink8/
+# ignore generated dirs
+test/
+train/
+
+*.zip
+*.log
