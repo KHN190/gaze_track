@@ -3,16 +3,10 @@ from imutils.video import FileVideoStream
 from imutils.video import VideoStream
 from imutils import face_utils
 import time
-import argparse
 import numpy as np
 import imutils
 import cv2
 import dlib
-import sys
-
-sys.path.insert(0, '../svm')
-
-from utils import load_model
 
 
 def eye_aspect_ratio(eye):
@@ -25,60 +19,21 @@ def eye_aspect_ratio(eye):
     return ear
 
 
-ap = argparse.ArgumentParser()
-ap.add_argument('-p',
-                '--shape-predictor',
-                required=True,
-                help='path to facial landmark predictor')
-ap.add_argument('-v',
-                '--video',
-                type=str,
-                default="",
-                help='path to input video file')
-args = vars(ap.parse_args())
-
 TOTAL = 0
 
 print('[INFO] Loading facial landmark predictor...')
 detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor(args['shape_predictor'])
+predictor = dlib.shape_predictor('../models/shape_predictor_68_face_landmarks.dat')
 
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS['left_eye']
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS['right_eye']
 
 print('[INFO] Starting video stream thread...')
+vs = VideoStream(src=0).start()
 fileStream = False
-if args['video']:
-    vs = FileVideoStream(args['video']).start()
-    fileStream = True
-else:
-    vs = VideoStream(src=0).start()
-    fileStream = False
 
 time.sleep(1.0)
 
-
-def curr_ear_window(cons_ear, ear, n, offset=0):
-    if cons_ear == None or cons_ear == []:
-        cons_ear = [-1.] * n
-
-    if ear > 0:
-        ear -= offset
-
-    cons_ear.append(ear)
-    cons_ear = cons_ear[1:]
-
-    ears = [round(x, 3) for x in cons_ear]
-    print(f" * ears: {ears}")
-
-    return cons_ear
-
-
-# load model, init ears
-svm = load_model('../svm/svm_13_acc.pkl')
-cons_ear = [-1.] * 13
-
-# mean = 0.2744
 pred = 0
 last_pred = 0
 recent_ears = [-1.] * 15
@@ -127,19 +82,15 @@ while True:
         # no eyes detected
         ear = -1.
 
-    # predict with svm
+    # predict with adaptive thres
     recent_ears = update_recent_ear(recent_ears, ear)
     mean_ear = calc_mean_ear(recent_ears)
 
-    offset = mean_ear - 0.2744 if mean_ear > 0 else 0
-    cons_ear = curr_ear_window(cons_ear, ear, 7, offset)
-
-    pred = svm.predict(np.array(cons_ear).reshape(1, -1))[0]
+    pred = 1 if ear <= mean_ear - 0.04 else 0
 
     # ignore consecutive blink detection
     if pred > 0 and last_pred != pred:
         TOTAL += 1
-        print(' * blink detected\n')
 
     last_pred = pred
 
