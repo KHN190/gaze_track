@@ -153,7 +153,7 @@ while True:
     cv2.imshow("Frame", frame)
     key = cv2.waitKey(1) & 0xFF
 
-    time.sleep(0.1)
+    time.sleep(0.05)
 
     if key == ord("q"):
         break
