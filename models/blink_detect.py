@@ -34,13 +34,26 @@ def eye_aspect_ratio(eye):
 
 
 def extract_blinks(gray, base=0, ear_thresh=0.25):
-    # count eye blink
+    start_ms = current_time()
     cnt = base
 
+    ear = extract_ears(gray)
+    if ear < ear_thresh and ear > 0:
+        cnt += 1
+
+    duration_ms = current_time() - start_ms
+    print("Eye blink detection took:     ", str(duration_ms / 1000) + "s")
+
+    return cnt
+
+
+def extract_ears(gray):
     start_ms = current_time()
     rects = detector(gray, 0)
+    ear = -1.0
 
-    for rect in rects:
+    # take only the first
+    for rect in rects[:1]:
         shape = predictor(gray, rect)
         shape = face_utils.shape_to_np(shape)
 
@@ -51,10 +64,7 @@ def extract_blinks(gray, base=0, ear_thresh=0.25):
 
         ear = (leftEAR + rightEAR) / 2.0
 
-        if ear < ear_thresh:
-            cnt += 1
-
         duration_ms = current_time() - start_ms
-        print("Eye blink detection took:     ", str(duration_ms / 1000) + "s")
+        print("Eye aspect ratio took:     ", str(duration_ms / 1000) + "s")
 
-    return cnt
+    return ear

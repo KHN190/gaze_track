@@ -4,20 +4,29 @@ from redis import Redis
 
 import cv2
 import time
+import yaml
+
+with open('config.yml') as f:
+    config = yaml.load(f.read(), Loader=yaml.CLoader)
+
+from svm.utils import load_model
 
 if __name__ == '__main__':
     cap = cv2.VideoCapture(0)
     conn = Redis()
-    last = time.time()
+    svm = load_model(config['svm']['model'])
 
-    blinks = 0
+    states = {
+        'last_pred': -1.,
+        'recent_ears': [-1.] * 15,
+        'cons_ear': [-1.] * 7,
+        'blinks': 0,
+        'svm': svm,
+        'n': int(config['svm']['frames']),
+    }
+
     while True:
-        now = time.time()
-        if now - last < 500: # 200ms
-            time.sleep(0.1)
-        last = now
-
-        blinks = face_track(cap=cap, conn=conn, blinks=blinks)
+        face_track(cap=cap, conn=conn, states=states)
 
     cap.release()
     cv2.destroyAllWindows()

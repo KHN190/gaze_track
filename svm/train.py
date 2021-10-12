@@ -3,8 +3,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.svm import SVC
 
 from utils import *
-from utils_frame_based import *
-
+from evaluate import *
 
 def train(norm_X, y, params):
 
@@ -12,12 +11,12 @@ def train(norm_X, y, params):
     cv = StratifiedShuffleSplit(n_splits=10, random_state=42)
 
     # SVM classifier
-    svm = SVC(tol=1e-5)
+    svm = SVC(tol=1e-4)
 
     # parameters
 
     # grid search for parameters
-    grid = GridSearchCV(estimator=svm, param_grid=params, cv=cv, n_jobs=-1)
+    grid = GridSearchCV(estimator=svm, param_grid=params, cv=cv, n_jobs=-1, scoring='f1')
     grid.fit(norm_X, y)
 
     # print best scores
@@ -31,17 +30,23 @@ if __name__ == '__main__':
 
     X, y = build_svm_data('./train/training_set.pkl', 7)
 
-    norm_X = transform_svm_data(X)
-
     params = {
         'kernel': ['rbf'],
-        'C': [10],
-        'gamma': ['scale'],
-        'max_iter': [5000],
-        'class_weight': [None],
+        'C': [.5],
+        'max_iter': [2000],
+        'cache_size': [1000],
     }
-    svm = train(norm_X, y, params)
+    norm_X = transform_svm_df(X)
 
-    # svm.predict(norm_X[0].reshape(1, -1))
+    train_X = norm_X
+    train_y = y
 
+    save_model(train_X, 'train_X.pkl')
+    save_model(train_y, 'train_y.pkl')
+
+    svm = train(train_X, train_y, params)
+
+    evaluate(svm.predict(train_X), train_y)
+    
     save_model(svm, 'svm_7.pkl')
+

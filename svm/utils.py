@@ -2,6 +2,9 @@ import os
 import pandas as pd
 import numpy as np
 
+from sklearn.preprocessing import StandardScaler
+
+
 # define read_annotations
 def read_annotations(input_file, len_video):
     # Read .tag file using readlines()
@@ -130,13 +133,11 @@ def build_svm_data(train_set, frames=13):
 
 
 # df to normalized (0, 1) data
-def transform_svm_data(X):
-    from sklearn.preprocessing import StandardScaler
-
-    f = lambda x: (StandardScaler().fit_transform(x.to_frame()))[:, 0]
+def transform_svm_df(X):
+    f = lambda x: (StandardScaler(with_mean=False, with_std=False).fit_transform(x.to_frame()))[:, 0]
 
     norm_X = X.groupby('subject').transform(f)
-    norm_X = StandardScaler().fit_transform(norm_X)
+    norm_X = StandardScaler(with_mean=False, with_std=False).fit_transform(norm_X)
 
     return norm_X
 

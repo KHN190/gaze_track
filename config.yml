@@ -4,3 +4,8 @@ gpu: false
 # eye blink detection
 EYE_AR_THRESH: 0.22
 EYE_AR_CONSEC_FRAMES: 1
+
+# svm
+svm:
+  frames: 7
+  model: "svm/svm_7.pkl"
