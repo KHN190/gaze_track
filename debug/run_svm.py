@@ -75,8 +75,8 @@ def curr_ear_window(cons_ear, ear, n, offset=0):
 
 
 # load model, init ears
-svm = load_model('../svm/svm_7.pkl')
-cons_ear = [-1.] * 7
+svm = load_model('../svm/svm_13.pkl')
+cons_ear = [-1.] * 13
 
 # mean = 0.2744
 pred = 0

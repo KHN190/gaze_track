@@ -28,12 +28,12 @@ def train(norm_X, y, params):
 
 if __name__ == '__main__':
 
-    X, y = build_svm_data('./train/training_set.pkl', 7)
+    X, y = build_svm_data('./train/training_set.pkl', 13)
 
     params = {
         'kernel': ['rbf'],
-        'C': [.5],
-        'max_iter': [2000],
+        'C': [10],
+        'max_iter': [2500],
         'cache_size': [1000],
     }
     norm_X = transform_svm_df(X)
@@ -41,12 +41,9 @@ if __name__ == '__main__':
     train_X = norm_X
     train_y = y
 
-    save_model(train_X, 'train_X.pkl')
-    save_model(train_y, 'train_y.pkl')
-
     svm = train(train_X, train_y, params)
 
     evaluate(svm.predict(train_X), train_y)
     
-    save_model(svm, 'svm_7.pkl')
+    save_model(svm, 'svm_13.pkl')
 

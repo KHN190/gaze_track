@@ -16,13 +16,15 @@ if __name__ == '__main__':
     conn = Redis()
     svm = load_model(config['svm']['model'])
 
+    n = int(config['svm']['frames'])
+
     states = {
         'last_pred': -1.,
-        'recent_ears': [-1.] * 15,
-        'cons_ear': [-1.] * 7,
+        'recent_ears': [-1.] * n * 2,
+        'cons_ear': [-1.] * n,
         'blinks': 0,
         'svm': svm,
-        'n': int(config['svm']['frames']),
+        'n': n,
     }
 
     while True:

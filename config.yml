@@ -7,5 +7,5 @@ EYE_AR_CONSEC_FRAMES: 1
 
 # svm
 svm:
-  frames: 7
-  model: "svm/svm_7.pkl"
+  frames: 13
+  model: "svm/svm_13.pkl"
