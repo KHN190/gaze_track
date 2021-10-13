@@ -23,7 +23,8 @@ TOTAL = 0
 
 print('[INFO] Loading facial landmark predictor...')
 detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor('../models/shape_predictor_68_face_landmarks.dat')
+predictor = dlib.shape_predictor(
+    '../models/shape_predictor_68_face_landmarks.dat')
 
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS['left_eye']
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS['right_eye']
@@ -36,7 +37,8 @@ time.sleep(1.0)
 
 pred = 0
 last_pred = 0
-recent_ears = [-1.] * 15
+recent_ears = [-1.] * 10
+recent_ears_long = [-1.] * 15
 
 
 def update_recent_ear(recent_ears, ear):
@@ -44,6 +46,7 @@ def update_recent_ear(recent_ears, ear):
         recent_ears.append(ear)
         recent_ears = recent_ears[1:]
     return recent_ears
+
 
 def calc_mean_ear(recent_ears):
     recent = [x for x in recent_ears if x > 0]
@@ -57,7 +60,7 @@ while True:
         break
 
     frame = vs.read()
-    frame = imutils.resize(frame, width=450)
+    frame = imutils.resize(frame, width=800)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     rects = detector(gray, 0)
@@ -84,21 +87,30 @@ while True:
 
     # predict with adaptive thres
     recent_ears = update_recent_ear(recent_ears, ear)
+    recent_ears_long = update_recent_ear(recent_ears_long, ear)
+
     mean_ear = calc_mean_ear(recent_ears)
+    mean_ear_long = calc_mean_ear(recent_ears_long)
 
-    pred = 1 if ear <= mean_ear - 0.04 else 0
+    # only detect when light changes not too fast,
+    # and that ear is stable
+    if abs(mean_ear_long - mean_ear) < 0.025:
 
-    # ignore consecutive blink detection
-    if pred > 0 and last_pred != pred:
-        TOTAL += 1
+        pred = 1 if ear <= mean_ear * 0.87 else 0
 
-    last_pred = pred
+        # ignore consecutive blink detection
+        if pred > 0 and last_pred != pred:
+            TOTAL += 1
+
+        last_pred = pred
 
     cv2.putText(frame, "Blinks: {}".format(TOTAL), (10, 30),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
     cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-    cv2.putText(frame, "Recent EAR mean: {:.2f}".format(mean_ear), (10, 60),
+    cv2.putText(frame, "EAR mean 1: {:.2f}".format(mean_ear), (10, 60),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 225, 0), 2)
+    cv2.putText(frame, "EAR mean 2: {:.2f}".format(mean_ear_long), (10, 90),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 225, 0), 2)
 
     cv2.imshow("Frame", frame)

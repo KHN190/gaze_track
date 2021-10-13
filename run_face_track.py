@@ -14,21 +14,40 @@ from svm.utils import load_model
 if __name__ == '__main__':
     cap = cv2.VideoCapture(0)
     conn = Redis()
-    svm = load_model(config['svm']['model'])
 
-    n = int(config['svm']['frames'])
+    method = config['method']
+    if method not in ['svm', 'adaptive']:
+        raise Exception('Eye blink method must be svm or adaptive.')
 
-    states = {
-        'last_pred': -1.,
-        'recent_ears': [-1.] * n * 2,
-        'cons_ear': [-1.] * n,
-        'blinks': 0,
-        'svm': svm,
-        'n': n,
-    }
+    if method == 'svm':
+        n = int(config['svm']['frames'])
+        svm = load_model(config['svm']['model'])
+
+        states = {
+            'last_pred': -1.,
+            'recent_ears': [-1.] * n * 2,
+            'cons_ear': [-1.] * n,
+            'blinks': 0,
+            'svm': svm,
+        }
+
+    elif method == 'adaptive':
+        n = int(config['adaptive']['frames'])
+        states = {
+            'last_pred': -1.,
+            'recent_ears': [-1.] * n,
+            'recent_ears_long': [-1.] * (n + 5),
+            'blinks': 0,
+        }
+
+    else:
+        raise Exception('Eye blink method not found.')
+
+    print(f"### running method: {method}")
+    print(f"\nstates: {states}\n")
 
     while True:
-        face_track(cap=cap, conn=conn, states=states)
+        face_track(cap=cap, conn=conn, states=states, method=method)
 
     cap.release()
     cv2.destroyAllWindows()

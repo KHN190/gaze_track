@@ -3,7 +3,6 @@ from imutils.video import FileVideoStream
 from imutils.video import VideoStream
 from imutils import face_utils
 import time
-import argparse
 import numpy as np
 import imutils
 import cv2
@@ -25,23 +24,12 @@ def eye_aspect_ratio(eye):
     return ear
 
 
-ap = argparse.ArgumentParser()
-ap.add_argument('-p',
-                '--shape-predictor',
-                required=True,
-                help='path to facial landmark predictor')
-ap.add_argument('-v',
-                '--video',
-                type=str,
-                default="",
-                help='path to input video file')
-args = vars(ap.parse_args())
-
 TOTAL = 0
 
 print('[INFO] Loading facial landmark predictor...')
 detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor(args['shape_predictor'])
+predictor = dlib.shape_predictor(
+    '../models/shape_predictor_68_face_landmarks.dat')
 
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS['left_eye']
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS['right_eye']

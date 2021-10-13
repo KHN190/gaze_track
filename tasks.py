@@ -25,7 +25,7 @@ from models.blink_detect import *
 import numpy as np
 
 
-def face_track(cap=None, conn=None, states={}):
+def face_track(cap=None, conn=None, states={}, method='adaptive'):
     # capture frame from camera
     if cap is None:
         cap = cv2.VideoCapture(0)
@@ -38,32 +38,16 @@ def face_track(cap=None, conn=None, states={}):
             conn = Redis()
         # face + eye detection
         img, faces, face_feats = extract_frame_features(frame, grayed=False)
-        # blink detection
         img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         ear = extract_ears(img)
 
-        # get last frames data
+        globals()[f"blink_{method}"](ear, states)
+
         blinks = states['blinks']
-        states['recent_ears'] = update_recent_ear(states['recent_ears'], ear)
-        mean_ear = calc_mean_ear(states['recent_ears'])
 
-        # normalize with train set mean value
-        offset = mean_ear - 0.2744 if mean_ear > 0 else 0
-        states['cons_ear'] = curr_ear_window(states['cons_ear'], ear, states['n'], offset)
-
-        # predict using svm
-        X = np.array(states['cons_ear']).reshape(1, -1)
-        pred = states['svm'].predict(X)[0]
-        if pred > 0 and pred != states['last_pred']:
-            blinks += 1
-            print(' * blink detected\n')
-
-        states['blinks'] = blinks
-        states['last_pred'] = pred
-
-        conn.set("faces", pickle.dumps(faces), ex=2)
-        conn.set("face_feats", pickle.dumps(face_feats), ex=2)
-        conn.set("blinks", str(blinks), ex=2)
+        conn.set('faces', pickle.dumps(faces), ex=2)
+        conn.set('face_feats', pickle.dumps(face_feats), ex=2)
+        conn.set('blinks', str(blinks), ex=2)
 
 
 def gaze_track(conn=None):
@@ -92,6 +76,53 @@ def gaze_track(conn=None):
 
             conn.set("gaze_coord", json.dumps(res), ex=2)
             conn.set("updated", json.dumps(ts), ex=2)
+
+
+def blink_svm(ear, states):
+    # get last frames data
+    blinks = states['blinks']
+    states['recent_ears'] = update_recent_ear(states['recent_ears'], ear)
+    mean_ear = calc_mean_ear(states['recent_ears'])
+
+    # normalize with train set mean value
+    offset = mean_ear - 0.2744 if mean_ear > 0 else 0
+    states['cons_ear'] = curr_ear_window(states['cons_ear'], ear, states['n'], offset)
+
+    # predict using svm
+    X = np.array(states['cons_ear']).reshape(1, -1)
+    pred = states['svm'].predict(X)[0]
+    if pred > 0 and pred != states['last_pred']:
+        blinks += 1
+        print(' * blink detected\n')
+
+    states['blinks'] = blinks
+    states['last_pred'] = pred
+
+
+def blink_adaptive(ear, states):
+    # get last frames data
+    blinks = states['blinks']
+
+    # predict with adaptive thres
+    states['recent_ears'] = update_recent_ear(states['recent_ears'], ear)
+    states['recent_ears_long'] = update_recent_ear(states['recent_ears_long'], ear)
+
+    mean_ear = calc_mean_ear(states['recent_ears'])
+    mean_ear_long = calc_mean_ear(states['recent_ears_long'])
+
+    # only detect when light changes not too fast,
+    # and that ear is stable
+    if abs(mean_ear_long - mean_ear) < 0.025:
+
+        pred = 1 if ear <= mean_ear * 0.87 else 0
+
+        # ignore consecutive blink detection
+        if pred > 0 and pred != states['last_pred']:
+            blinks += 1
+            print(' * blink detected\n')
+
+        states['blinks'] = blinks
+        states['last_pred'] = pred
 
 
 # Utils

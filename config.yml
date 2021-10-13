@@ -1,11 +1,14 @@
 # use gpu?
 gpu: false
 
-# eye blink detection
-EYE_AR_THRESH: 0.22
-EYE_AR_CONSEC_FRAMES: 1
+# eye blink: 
+#   adaptive / svm
+method: 'adaptive'
 
 # svm
 svm:
   frames: 13
   model: "svm/svm_13.pkl"
+
+adaptive:
+  frames: 10
