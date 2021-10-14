@@ -6,6 +6,8 @@ import cv2
 import time
 import yaml
 
+import numpy as np
+
 with open('config.yml') as f:
     config = yaml.load(f.read(), Loader=yaml.CLoader)
 
@@ -28,16 +30,25 @@ if __name__ == '__main__':
             'recent_ears': [-1.] * n * 2,
             'cons_ear': [-1.] * n,
             'blinks': 0,
+            'n': n,
             'svm': svm,
         }
 
     elif method == 'adaptive':
         n = int(config['adaptive']['frames'])
+        m = int(config['adaptive']['frames_long'])
+        i = int(config['adaptive']['eye_move_frames'])
+        t = int(config['adaptive']['eye_move_thres'])
+        s = float(config['adaptive']['sensi'])
+
         states = {
             'last_pred': -1.,
             'recent_ears': [-1.] * n,
-            'recent_ears_long': [-1.] * (n + 5),
+            'recent_ears_long': [-1.] * m,
+            'eye_move_thres': t,
+            'eye_centers': [np.array([.0, .0])] * i,
             'blinks': 0,
+            'sensi': s,
         }
 
     else:

@@ -35,13 +35,8 @@ predictor = dlib.shape_predictor(
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS['right_eye']
 
 print('[INFO] Starting video stream thread...')
+vs = VideoStream(src=0).start()
 fileStream = False
-if args['video']:
-    vs = FileVideoStream(args['video']).start()
-    fileStream = True
-else:
-    vs = VideoStream(src=0).start()
-    fileStream = False
 
 time.sleep(1.0)
 
@@ -63,7 +58,7 @@ def curr_ear_window(cons_ear, ear, n, offset=0):
 
 
 # load model, init ears
-svm = load_model('../svm/svm_13_acc.pkl')
+svm = load_model('../svm/svm_13.pkl')
 cons_ear = [-1.] * 13
 
 # mean = 0.2744

@@ -3,6 +3,8 @@
 from scipy.spatial import distance as dist
 from imutils import face_utils
 
+import numpy as np
+
 import time
 import dlib
 import os
@@ -52,6 +54,7 @@ def extract_ears(gray):
     rects = detector(gray, 0)
     ear = -1.0
 
+    center = np.array([.0, .0])
     # take only the first
     for rect in rects[:1]:
         shape = predictor(gray, rect)
@@ -62,9 +65,13 @@ def extract_ears(gray):
         leftEAR = eye_aspect_ratio(leftEye)
         rightEAR = eye_aspect_ratio(rightEye)
 
+        l_center = sum(leftEye) / len(leftEye)
+        r_center = sum(rightEye) / len(rightEye)
+
         ear = (leftEAR + rightEAR) / 2.0
+        center = (l_center + r_center) / 2.0
 
         duration_ms = current_time() - start_ms
         print("Eye aspect ratio took:     ", str(duration_ms / 1000) + "s")
 
-    return ear
+    return ear, center

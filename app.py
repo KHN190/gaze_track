@@ -36,3 +36,12 @@ def blink_count():
     if rep is not None:
         return rep
     return ''
+
+@app.route("/msg")
+def msg():
+
+    rep = conn.get("msg")
+
+    if rep is not None:
+        return rep
+    return ''

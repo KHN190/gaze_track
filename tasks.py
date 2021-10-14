@@ -39,9 +39,12 @@ def face_track(cap=None, conn=None, states={}, method='adaptive'):
         # face + eye detection
         img, faces, face_feats = extract_frame_features(frame, grayed=False)
         img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        ear = extract_ears(img)
+        ear, center = extract_ears(img)
 
-        globals()[f"blink_{method}"](ear, states)
+        globals()[f"blink_{method}"](ear, center, states)
+
+        if states.get('msg', '') != '':
+            print(f" # {states['msg']}")
 
         blinks = states['blinks']
 
@@ -78,10 +81,11 @@ def gaze_track(conn=None):
             conn.set("updated", json.dumps(ts), ex=2)
 
 
-def blink_svm(ear, states):
+def blink_svm(ear, center, states):
     # get last frames data
     blinks = states['blinks']
     states['recent_ears'] = update_recent_ear(states['recent_ears'], ear)
+    states['eye_centers'] = update_eye_centers(states['eye_centers'], center)
     mean_ear = calc_mean_ear(states['recent_ears'])
 
     # normalize with train set mean value
@@ -99,30 +103,44 @@ def blink_svm(ear, states):
     states['last_pred'] = pred
 
 
-def blink_adaptive(ear, states):
+def blink_adaptive(ear, center, states):
     # get last frames data
     blinks = states['blinks']
 
     # predict with adaptive thres
     states['recent_ears'] = update_recent_ear(states['recent_ears'], ear)
     states['recent_ears_long'] = update_recent_ear(states['recent_ears_long'], ear)
+    states['eye_centers'] = update_eye_centers(states['eye_centers'], center)
 
     mean_ear = calc_mean_ear(states['recent_ears'])
     mean_ear_long = calc_mean_ear(states['recent_ears_long'])
 
+    mean_center = sum(states['eye_centers']) / len(states['eye_centers'])
+    diff_center = eye_center_dist(center, mean_center)
+
+    thres = states['eye_move_thres']
+
     # only detect when light changes not too fast,
-    # and that ear is stable
-    if abs(mean_ear_long - mean_ear) < 0.025:
+    # and that eye position is stable
+    if abs(mean_ear_long - mean_ear) >= 0.02:
+        states['msg'] = 'Ignore unstable light change.'
+        return
 
-        pred = 1 if ear <= mean_ear * 0.87 else 0
+    if diff_center >= thres:
+        states['msg'] = 'Ignore moving head.'
+        return
 
-        # ignore consecutive blink detection
-        if pred > 0 and pred != states['last_pred']:
-            blinks += 1
-            print(' * blink detected\n')
+    pred = 1 if ear <= mean_ear * states['sensi'] else 0
 
-        states['blinks'] = blinks
-        states['last_pred'] = pred
+    # ignore consecutive blink detection
+    if pred > 0 and pred != states['last_pred']:
+        blinks += 1
+        print(' * blink detected\n')
+    else:
+        states['msg'] = ''
+
+    states['blinks'] = blinks
+    states['last_pred'] = pred
 
 
 # Utils
@@ -159,3 +177,14 @@ def calc_mean_ear(recent_ears):
     if recent != []:
         return sum(recent) * 1.0 / len(recent)
     return -1
+
+
+def update_eye_centers(centers, c):
+    centers.append(c)
+    centers = centers[1:]
+
+    return centers
+
+def eye_center_dist(c1, c2):
+    from scipy.spatial import distance as dist
+    return dist.euclidean(c1, c2)
