@@ -27,7 +27,7 @@ TOTAL = 0
 print('[INFO] Loading facial landmark predictor...')
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(
-    '../models/shape_predictor_68_face_landmarks.dat')
+    '../models/shape_predictor_68_face_landmarks_GTX.dat')
 
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS['left_eye']
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS['right_eye']
@@ -40,10 +40,11 @@ time.sleep(1.0)
 
 pred = 0
 last_pred = 0
-recent_ears = [-1.] * 15
-recent_ears_long = [-1.] * 25
+recent_ears = [-1.] * 10
+recent_ears_long = [-1.] * 20
 centers = [-1.] * 10
 eye_move_thres = 30
+thres = 0.89
 
 
 def update_recent_ear(recent_ears, ear):
@@ -115,7 +116,7 @@ while True:
     # and that ear is stable
     if abs(mean_ear_long - mean_ear) < 0.02 and diff_center < eye_move_thres:
 
-        pred = 1 if (ear > 0 and ear <= mean_ear * 0.85) else 0
+        pred = 1 if (ear > 0 and ear <= mean_ear * thres) else 0
 
         # ignore consecutive blink detection
         if pred > 0 and last_pred != pred:
@@ -135,7 +136,7 @@ while True:
     if diff_center >= eye_move_thres:
 
         cv2.putText(frame, "Eye center moved.", (10, 500),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 225, 0), 2)        
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 225, 0), 2)
 
     cv2.imshow("Frame", frame)
     key = cv2.waitKey(1) & 0xFF

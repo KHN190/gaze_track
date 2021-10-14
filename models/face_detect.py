@@ -2,7 +2,8 @@ import cv2, time
 import numpy as np
 
 cascades = '/usr/share/opencv4/haarcascades/'
-face_cascade = cv2.CascadeClassifier(cascades + 'haarcascade_frontalface_default.xml')
+face_cascade = cv2.CascadeClassifier(cascades +
+                                     'haarcascade_frontalface_default.xml')
 eye_cascade = cv2.CascadeClassifier(cascades + 'haarcascade_eye.xml')
 
 
@@ -31,8 +32,6 @@ def extract_face_features(face, img, gray):
         eye_images.append(np.copy(img[y + ey:y + ey + eh, x + ex:x + ex + ew]))
 
     roi_color = img[y:y + h, x:x + w]
-    for (ex, ey, ew, eh) in eyes:
-        cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
 
     return face_image, eye_images
 
@@ -54,7 +53,6 @@ def extract_frame_features(img, grayed=False):
     face_features = []
     for [x, y, w, h] in face_detections:
         face = [x, y, w, h]
-        cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
         face_image, eye_images = extract_face_features(face, img, gray)
         face_grid = get_face_grid(face, img.shape[1], img.shape[0], 25)
 

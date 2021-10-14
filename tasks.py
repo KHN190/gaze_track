@@ -26,6 +26,8 @@ import numpy as np
 
 
 def face_track(cap=None, conn=None, states={}, method='adaptive'):
+    debug = config['debug']
+
     # capture frame from camera
     if cap is None:
         cap = cv2.VideoCapture(0)
@@ -37,20 +39,28 @@ def face_track(cap=None, conn=None, states={}, method='adaptive'):
         if conn is None:
             conn = Redis()
         # face + eye detection
-        img, faces, face_feats = extract_frame_features(frame, grayed=False)
         img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        ear, center = extract_ears(img)
+        img, faces, face_feats = extract_frame_features(img, grayed=True)
 
-        globals()[f"blink_{method}"](ear, center, states)
+        if debug:
+            ear, center = extract_ears(frame, grayed=False, debug=True)
+            states['frame'] = frame
+        else:
+            ear, center = extract_ears(img, grayed=True)
 
-        if states.get('msg', '') != '':
-            print(f" # {states['msg']}")
+        globals()[f"blink_{method}"](ear, center, states, debug=debug)
+
+        if debug:
+            cv2.imshow("Frame", frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'): return False
 
         blinks = states['blinks']
 
         conn.set('faces', pickle.dumps(faces), ex=2)
         conn.set('face_feats', pickle.dumps(face_feats), ex=2)
         conn.set('blinks', str(blinks), ex=2)
+
+    return True
 
 
 def gaze_track(conn=None):
@@ -81,7 +91,7 @@ def gaze_track(conn=None):
             conn.set("updated", json.dumps(ts), ex=2)
 
 
-def blink_svm(ear, center, states):
+def blink_svm(ear, center, states, debug=False):
     # get last frames data
     blinks = states['blinks']
     states['recent_ears'] = update_recent_ear(states['recent_ears'], ear)
@@ -90,7 +100,8 @@ def blink_svm(ear, center, states):
 
     # normalize with train set mean value
     offset = mean_ear - 0.2744 if mean_ear > 0 else 0
-    states['cons_ear'] = curr_ear_window(states['cons_ear'], ear, states['n'], offset)
+    states['cons_ear'] = curr_ear_window(states['cons_ear'], ear, states['n'],
+                                         offset)
 
     # predict using svm
     X = np.array(states['cons_ear']).reshape(1, -1)
@@ -103,13 +114,14 @@ def blink_svm(ear, center, states):
     states['last_pred'] = pred
 
 
-def blink_adaptive(ear, center, states):
+def blink_adaptive(ear, center, states, debug=False):
     # get last frames data
     blinks = states['blinks']
 
     # predict with adaptive thres
     states['recent_ears'] = update_recent_ear(states['recent_ears'], ear)
-    states['recent_ears_long'] = update_recent_ear(states['recent_ears_long'], ear)
+    states['recent_ears_long'] = update_recent_ear(states['recent_ears_long'],
+                                                   ear)
     states['eye_centers'] = update_eye_centers(states['eye_centers'], center)
 
     mean_ear = calc_mean_ear(states['recent_ears'])
@@ -119,6 +131,25 @@ def blink_adaptive(ear, center, states):
     diff_center = eye_center_dist(center, mean_center)
 
     thres = states['eye_move_thres']
+
+    # debug in frame
+    if debug:
+        frame = states['frame']
+
+        cv2.putText(frame, "Eye diff: {:.2f}".format(diff_center), (10, 150),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 225, 0), 2)
+        cv2.putText(frame, "Blinks: {}".format(blinks), (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(frame, "EAR mean 1: {:.2f}".format(mean_ear), (10, 60),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 225, 0), 2)
+        cv2.putText(frame, "EAR mean 2: {:.2f}".format(mean_ear_long),
+                    (10, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 225, 0), 2)
+
+        if diff_center >= thres:
+            cv2.putText(frame, "Eye center moved.", (10, 500),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 225, 0), 2)
 
     # only detect when light changes not too fast,
     # and that eye position is stable
@@ -130,7 +161,7 @@ def blink_adaptive(ear, center, states):
         states['msg'] = 'Ignore moving head.'
         return
 
-    pred = 1 if ear <= mean_ear * states['sensi'] else 0
+    pred = 1 if ear > 0 and ear <= mean_ear * states['sensi'] else 0
 
     # ignore consecutive blink detection
     if pred > 0 and pred != states['last_pred']:
@@ -184,6 +215,7 @@ def update_eye_centers(centers, c):
     centers = centers[1:]
 
     return centers
+
 
 def eye_center_dist(c1, c2):
     from scipy.spatial import distance as dist

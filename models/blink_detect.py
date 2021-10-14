@@ -8,6 +8,7 @@ import numpy as np
 import time
 import dlib
 import os
+import cv2
 
 # config for blink detection
 COUNTER = 0
@@ -17,7 +18,8 @@ TOTAL = 0
 model_root = os.getcwd() + '/models'
 
 detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor(model_root + "/shape_predictor_68_face_landmarks.dat")
+predictor = dlib.shape_predictor(model_root +
+                                 "/shape_predictor_68_face_landmarks_GTX.dat")
 
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS['left_eye']
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS['right_eye']
@@ -35,26 +37,16 @@ def eye_aspect_ratio(eye):
     return (A + B) / (2.0 * C)
 
 
-def extract_blinks(gray, base=0, ear_thresh=0.25):
-    start_ms = current_time()
-    cnt = base
+def extract_ears(img, grayed=False, debug=False):
+    gray = img
+    if not grayed:
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    ear = extract_ears(gray)
-    if ear < ear_thresh and ear > 0:
-        cnt += 1
-
-    duration_ms = current_time() - start_ms
-    print("Eye blink detection took:     ", str(duration_ms / 1000) + "s")
-
-    return cnt
-
-
-def extract_ears(gray):
     start_ms = current_time()
     rects = detector(gray, 0)
     ear = -1.0
-
     center = np.array([.0, .0])
+
     # take only the first
     for rect in rects[:1]:
         shape = predictor(gray, rect)
@@ -70,6 +62,13 @@ def extract_ears(gray):
 
         ear = (leftEAR + rightEAR) / 2.0
         center = (l_center + r_center) / 2.0
+
+        if debug:
+            leftEyeHull = cv2.convexHull(leftEye)
+            rightEyeHull = cv2.convexHull(rightEye)
+
+            cv2.drawContours(img, [leftEyeHull], -1, (0, 255, 0), 1)
+            cv2.drawContours(img, [rightEyeHull], -1, (0, 255, 0), 1)
 
         duration_ms = current_time() - start_ms
         print("Eye aspect ratio took:     ", str(duration_ms / 1000) + "s")

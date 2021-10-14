@@ -11,8 +11,11 @@ svm:
   model: "svm/svm_13.pkl"
 
 adaptive:
-  frames: 15
-  frames_long: 25
+  frames: 10
+  frames_long: 20
   eye_move_frames: 10
   eye_move_thres: 30
-  sensi: 0.84
+  sensi: 0.89
+
+# debug: True
+debug: False

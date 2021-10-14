@@ -58,7 +58,8 @@ if __name__ == '__main__':
     print(f"\nstates: {states}\n")
 
     while True:
-        face_track(cap=cap, conn=conn, states=states, method=method)
+        if not face_track(cap=cap, conn=conn, states=states, method=method):
+            break
 
     cap.release()
     cv2.destroyAllWindows()
