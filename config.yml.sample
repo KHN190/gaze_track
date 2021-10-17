@@ -8,14 +8,14 @@ method: 'adaptive'
 # svm
 svm:
   frames: 13
-  model: "svm/svm_13_pre.pkl"
+  model: "svm/svm_13.pkl"
 
 adaptive:
   frames: 10
   frames_long: 20
   eye_move_frames: 10
-  eye_move_thres: 15
-  sensi: 0.88
+  eye_move_thres: 30
+  sensi: 0.89
 
 # debug: True
-debug: True
+debug: False

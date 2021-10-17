@@ -93,7 +93,7 @@ def extract_gaze(face, face_feature):
 
 def extract_gazes(faces, face_features):
     outputs = []
-    for i, face in enumerate(faces): 
+    for i, face in enumerate(faces):
         output = extract_gaze(face, face_features[i])
         if output is not None:
             outputs.append(output)

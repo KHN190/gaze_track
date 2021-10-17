@@ -4,3 +4,5 @@ __pycache__
 
 svm/train
 svm/test
+
+config.yml
