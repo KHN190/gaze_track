@@ -65,11 +65,6 @@ def extract_frame_features(img, grayed=False):
     return img, faces, face_features
 
 
-def extract_image_features(full_img_path):
-    img = cv2.imread(full_img_path)
-    return extract_frame_features(img)
-
-
 # This code is converted from https://github.com/CSAILVision/GazeCapture/blob/master/code/faceGridFromFaceRect.m
 
 # Given face detection data, generate face grid data.

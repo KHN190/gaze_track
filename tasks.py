@@ -64,15 +64,16 @@ def face_track(q, conn, states={}):
 
 def blink_track(frame, conn, states={}, method='adaptive'):
     debug = config['debug']
+    use_cnn = config['cnn_face_detect']
 
     # face + eye detection
     img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     if debug:
-        ear, center = extract_ears(frame, grayed=False, debug=True)
+        ear, center = extract_ears(frame, grayed=False, cnn=use_cnn, debug=True)
         states['frame'] = frame
     else:
-        ear, center = extract_ears(img, grayed=True)
+        ear, center = extract_ears(img, grayed=True, cnn=use_cnn)
 
     globals()[f"blink_{method}"](ear, center, states, debug=debug)
 

@@ -5,17 +5,24 @@ gpu: true
 #   adaptive / svm
 method: 'adaptive'
 
-# svm
+# use dlib cnn face detector
+# it's much faster
+cnn_face_detect: True
+# use caffe face landmarks
+cnn_face_landmarks: True
+
+# svm eye blink
 svm:
   frames: 13
   model: "svm/svm_13.pkl"
 
+# adaptive eye blink thres
 adaptive:
   frames: 10
   frames_long: 20
   eye_move_frames: 10
-  eye_move_thres: 30
-  sensi: 0.89
+  eye_move_thres: 15
+  sensi: 0.88
 
-# debug: True
-debug: False
+debug: True
+# debug: False
