@@ -1,6 +1,8 @@
-from tasks import face_track
+from tasks import face_track, blink_track, VideoGet
 
 from redis import Redis
+from threading import Thread
+from queue import Queue
 
 import cv2
 import time
@@ -14,7 +16,9 @@ with open('config.yml') as f:
 from svm.utils import load_model
 
 if __name__ == '__main__':
-    cap = cv2.VideoCapture(0)
+    cap = VideoGet(0)
+    cap.start()
+
     conn = Redis()
 
     method = config['method']
@@ -57,9 +61,16 @@ if __name__ == '__main__':
     print(f"### running method: {method}")
     print(f"\nstates: {states}\n")
 
-    while True:
-        if not face_track(cap=cap, conn=conn, states=states, method=method):
-            break
+    q = Queue()
 
-    cap.release()
+    while True:
+        ret, frame = cap.read()
+        if ret:
+            q.put(frame, timeout=1)
+
+            Thread(target=face_track, args=(q, conn, states)).start()
+            if not blink_track(frame, conn, states, method): 
+                break
+
+    cap.stop()
     cv2.destroyAllWindows()

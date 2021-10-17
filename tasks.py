@@ -24,41 +24,63 @@ from models.blink_detect import *
 
 import numpy as np
 
+# capture video
 
-def face_track(cap=None, conn=None, states={}, method='adaptive'):
+from threading import Thread
+
+class VideoGet:
+    """
+    Class that continuously gets frames from a VideoCapture object
+    with a dedicated thread.
+    """
+
+    def __init__(self, src=0):
+        self.stream = cv2.VideoCapture(src)
+        self.stopped = False
+
+    def start(self):    
+        Thread(target=self.read, args=()).start()
+        return self
+
+    def read(self):
+        if not self.stopped:
+            return self.stream.read()
+
+    def stop(self):
+        self.stopped = True
+        self.stream.release()
+
+
+def face_track(q, conn, states={}):
+    frame = q.get(False)
+
+    # face + eye detection
+    img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    img, faces, face_feats = extract_frame_features(frame, grayed=False)
+
+    conn.set('faces', pickle.dumps(faces), ex=2)
+    conn.set('face_feats', pickle.dumps(face_feats), ex=2)
+
+
+def blink_track(frame, conn, states={}, method='adaptive'):
     debug = config['debug']
 
-    # capture frame from camera
-    if cap is None:
-        cap = cv2.VideoCapture(0)
+    # face + eye detection
+    img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    # get frame from camera
-    ret, frame = cap.read()
-    if ret:
-        # redis conn
-        if conn is None:
-            conn = Redis()
-        # face + eye detection
-        img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        img, faces, face_feats = extract_frame_features(frame, grayed=False)
+    if debug:
+        ear, center = extract_ears(frame, grayed=False, debug=True)
+        states['frame'] = frame
+    else:
+        ear, center = extract_ears(img, grayed=True)
 
-        if debug:
-            ear, center = extract_ears(frame, grayed=False, debug=True)
-            states['frame'] = frame
-        else:
-            ear, center = extract_ears(img, grayed=True)
+    globals()[f"blink_{method}"](ear, center, states, debug=debug)
 
-        globals()[f"blink_{method}"](ear, center, states, debug=debug)
+    if debug:
+        cv2.imshow("Frame", frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'): return False
 
-        if debug:
-            cv2.imshow("Frame", frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'): return False
-
-        blinks = states['blinks']
-
-        conn.set('faces', pickle.dumps(faces), ex=2)
-        conn.set('face_feats', pickle.dumps(face_feats), ex=2)
-        conn.set('blinks', str(blinks), ex=2)
+    conn.set('blinks', str(states['blinks']), ex=2)
 
     return True
 
@@ -90,6 +112,9 @@ def gaze_track(conn=None):
             conn.set("gaze_coord", json.dumps(res), ex=2)
             conn.set("updated", json.dumps(ts), ex=2)
 
+
+
+# blink detection methods
 
 def blink_svm(ear, center, states, debug=False):
     # get last frames data
@@ -145,8 +170,7 @@ def blink_adaptive(ear, center, states, debug=False):
     thres = states['eye_move_thres']
 
     # penalty on eye move stability, and ear stability
-    penalty = mean(states['diffs']) / thres * 0.1 + var(
-        states['recent_ears']) * 0.1
+    penalty = mean(states['diffs']) / thres * 0.08 * (mean_ear / 0.45)
 
     ear_thres = mean_ear * states['sensi'] - penalty
 
